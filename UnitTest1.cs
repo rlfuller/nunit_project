@@ -21,26 +21,28 @@ namespace Tests
         // {
         // }{
 
-        private IConfiguration Configuration {get; set;}
-        private readonly HttpClient client = new HttpClient();
+        //private IConfiguration Configuration {get; set;}
+        private IConfiguration _configuration;
+        public IConfiguration Configuration {
+            get
+            {
+                if (_configuration != null)
+                    return _configuration;
 
-        //public string json;
-        public JObject myJson;
+                var builder = new ConfigurationBuilder()
+                    .SetBasePath(Directory.GetCurrentDirectory())
+                    .AddJsonFile("appsettings.json");
+                
+                return _configuration = builder.Build();
+            }
+        }
+
+        public JObject roverData;
         public int closingsCount;
-
         public IWebDriver driver;
 
-
-        [OneTimeSetUp]
-        public void SetUpTest()
+        private void setUpRoverData()
         {
-            //get configuration needed for rover
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json");
-            
-            Configuration = builder.Build();
-
             var username = Environment.GetEnvironmentVariable("ROVER_USERNAME");
             var password = Environment.GetEnvironmentVariable("ROVER_PASSWORD");
 
@@ -57,19 +59,11 @@ namespace Tests
                 json = wb.DownloadString(rover_url);
             }
 
-            myJson = JObject.Parse(json);
+            roverData = JObject.Parse(json);
+        }
 
-            //check if closings are enabled
-            bool closingsEnabled = (bool) myJson["data"][0]["metadata"]["closings"]["enabled"];
-            
-            //if closings aren't enabled, end program/do not test, maybe set a flag
-            if (!closingsEnabled) {
-                Assert.Ignore("No tests should be run");
-                return;
-            }
-
-            //get the closings counts number (will need this value for some of the tests)
-
+        private void setUpClosingsCount()
+        {
             var env = Configuration["env"];
             var site = Configuration["site"];
 
@@ -99,12 +93,10 @@ namespace Tests
                     Assert.Ignore("Could not get closings count from closings API: {0}", e.Message);
                 }
             }
-            //get url
-            driver = new ChromeDriver();
-            driver.Url = String.Format("http://{0}{1}", Configuration["host"], Configuration["path"]);
-            
+        }
 
-            //disable flex ad
+        private void disableFlexAd()
+        {
             int sleep = 2000;
             System.Threading.Thread.Sleep(sleep);
             //driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
@@ -132,9 +124,42 @@ namespace Tests
                     driver.SwitchTo().Window(main_content);
                 }
             }
+        }
+
+        [OneTimeSetUp]
+        public void SetUpTest()
+        {
+            //get configuration needed for rover
+            // var builder = new ConfigurationBuilder()
+            //     .SetBasePath(Directory.GetCurrentDirectory())
+            //     .AddJsonFile("appsettings.json");
+            
+            // Configuration = builder.Build();
+
+            //Rover Data
+            setUpRoverData();
+
+            //check if closings are enabled
+            bool closingsEnabled = (bool) roverData["data"][0]["metadata"]["closings"]["enabled"];
+            
+            //if closings aren't enabled, end program/do not test, maybe set a flag
+            if (!closingsEnabled) {
+                Assert.Ignore("No tests should be run");
+                return;
+            }
+
+            //get the closings counts number (will need this value for some of the tests)
+            setUpClosingsCount();
+            
+            //get url
+            driver = new ChromeDriver();
+            driver.Url = String.Format("http://{0}{1}", Configuration["host"], Configuration["path"]);
+            
+
+            //disable flex ad
+            disableFlexAd();
 
             //run all tests
-
 
         }
 
