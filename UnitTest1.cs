@@ -195,8 +195,7 @@ namespace Tests
                 () => { 
                     TestAlertBarClosingsText(anchorEl);
                     TestAlertBarClosingsNumber(anchorEl);
-                    Assert.Fail("argh!");
-                    Assert.True(false,"NOt really true");
+                    TestAlertBarHref(anchorEl);
                 }
             );
 
@@ -247,7 +246,17 @@ namespace Tests
             }
             Assert.AreEqual(alertsBarClosings, closingsCount, "Closings count is not correct. Api shows {0} and " + 
                 "alerts bar shows {1}.", closingsCount, alertsBarClosings
-                                            );
+            );
+        }
+
+        public void TestAlertBarHref(IWebElement el)
+        {
+
+            string href = el.GetAttribute("href");
+            string comparison = String.Format("http://{0}/weather/closings", Configuration["host"]);
+                
+            Assert.AreEqual(href, comparison, "The closings href in the alerts bar is not correct. " +
+            "It links to {0}.", href);
         }
     }
 }
