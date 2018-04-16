@@ -194,6 +194,7 @@ namespace Tests
             Assert.Multiple(
                 () => { 
                     TestAlertBarClosingsText(anchorEl);
+                    TestAlertBarClosingsNumber(anchorEl);
                     Assert.Fail("argh!");
                     Assert.True(false,"NOt really true");
                 }
@@ -224,30 +225,29 @@ namespace Tests
 
             Assert.AreEqual(comparisionText, closingsText, "There are active closings, but the closings text is not correct." + 
                                                     "Page is displaying {0}.", closingsText);
-            /*
-            closings_label_el = self.find_el(self.Selectors.hp_alerts_closings_label, closings_alerts[0])
-        closings_label = self.get_el_attr(closings_label_el, "textContent")
+        }
 
-        closings_headline_el = self.find_el(self.Selectors.hp_alerts_closings_headline, closings_alerts[0])
-        closings_headline = self.get_el_attr(closings_headline_el, "textContent")
+        public void TestAlertBarClosingsNumber(IWebElement el)
+        {
 
-        with self.subTest(name="Test Home Page alerts bar closings text"):
-            closings_text = closings_alerts[0].get_attribute("textContent").strip()
+            IWebElement closingsHeadlineEl = el.FindElement(By.CssSelector(".alerts--headline"));
+            string closingsHeadline = closingsHeadlineEl.GetAttribute("textContent");
 
-            closings_alerts_template = "Closings: There %s currently %s active closing%s or delay%s"
-            interpolation_tuple = (
-                "is", 1, "", ""
-            ) if self.closings_count == 1 else (
-                "are", str(self.closings_count), "s", "s"
-            )
-            comparison_text = closings_alerts_template % interpolation_tuple
+            //extract the closings number from the closings Headline
 
-            closings_text = "%s %s" % (closings_label, closings_headline)
-
-            assert_text = self.assert_text(self.Labels.active_closings, closings_text)
-
-            assert comparison_text == closings_text, assert_text
-             */
+            // Split on one or more non-digit characters.
+            int? alertsBarClosings = null;
+            string[] numbers = System.Text.RegularExpressions.Regex.Split(closingsHeadline, @"\D+");
+            foreach (string value in numbers)
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    alertsBarClosings = int.Parse(value);
+                }
+            }
+            Assert.AreEqual(alertsBarClosings, closingsCount, "Closings count is not correct. Api shows {0} and " + 
+                "alerts bar shows {1}.", closingsCount, alertsBarClosings
+                                            );
         }
     }
 }
