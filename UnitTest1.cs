@@ -10,16 +10,12 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System.Linq;
 
 namespace Tests
 {
-    
     public class Tests
     {
-        // [SetUp]
-        // public void Setup()
-        // {
-        // }{
 
         //private IConfiguration Configuration {get; set;}
         private IConfiguration _configuration;
@@ -40,6 +36,8 @@ namespace Tests
         public JObject roverData;
         public int closingsCount;
         public IWebDriver driver;
+
+        private int initialFlexAdTimeout = 2000;
 
         private void setUpRoverData()
         {
@@ -95,10 +93,10 @@ namespace Tests
             }
         }
 
-        private void disableFlexAd()
+        private void disableFlexAd(int timeout = 0)
         {
-            int sleep = 2000;
-            System.Threading.Thread.Sleep(sleep);
+            
+            System.Threading.Thread.Sleep(timeout);
             //driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(5);
             var main_content = driver.CurrentWindowHandle;
             var frames = driver.FindElements(By.CssSelector("#ad-flex iframe"));
@@ -107,7 +105,7 @@ namespace Tests
                 if(frames[0].Displayed)
                 {
                     driver.SwitchTo().Frame(frames[0]);
-                    System.Threading.Thread.Sleep(sleep);
+                    System.Threading.Thread.Sleep(timeout);
                     var logos = driver.FindElements(By.CssSelector("[class*=station-logo]"));
 
                     
@@ -157,7 +155,7 @@ namespace Tests
             
 
             //disable flex ad
-            disableFlexAd();
+            disableFlexAd(initialFlexAdTimeout);
 
             //run all tests
 
@@ -170,16 +168,86 @@ namespace Tests
             driver.Quit();
         }
 
+        [SetUp]
+        public void Setup()
+        {
+            disableFlexAd();
+        }
+
         [Test]
-        public void Test1()
-        {   
-            //System.Console.WriteLine("hello");
-        //System.Console.WriteLine(json);
-            // Console.Out.WriteLine("rachel jlkdfjsl");
-            // TestContext.Out.WriteLine("alkdjsldfjsl this sucks");
-            System.Console.WriteLine(closingsCount);
+        public void TestClosingCountAlertBar()
+        {
+            if (closingsCount < 1) {
+                Assert.Ignore("Closing Count must be greater than 0 for this test.");
+                return;
+            }
+
+            var alertsBarEl = driver.FindElement(By.CssSelector(".alerts--container"));
+            var anchorEls = alertsBarEl.FindElements(By.CssSelector("a"));
             
-            Assert.Pass();
+            var anchorEl = (from anchor in anchorEls
+                             where anchor.GetAttribute("textContent").Contains("Closings:")
+                             select anchor).FirstOrDefault();
+
+            Assert.IsNotNull(anchorEl, "Closing Alert not found in alerts bar.");
+
+            Assert.Multiple(
+                () => { 
+                    TestAlertBarClosingsText(anchorEl);
+                    Assert.Fail("argh!");
+                    Assert.True(false,"NOt really true");
+                }
+            );
+
+        }
+
+        public void TestAlertBarClosingsText(IWebElement el)
+        {
+
+            IWebElement closingsLabelEl = el.FindElement(By.CssSelector(".alerts--label"));
+            string closingsLabel = closingsLabelEl.GetAttribute("textContent");
+
+            IWebElement closingsHeadlineEl = el.FindElement(By.CssSelector(".alerts--headline"));
+            string closingsHeadline = closingsHeadlineEl.GetAttribute("textContent");
+
+            Tuple<string, int, string> closingsSyntax;
+            if (this.closingsCount == 1){
+                closingsSyntax = new Tuple<string, int, string>("is", 1, "");
+            }
+            else
+                closingsSyntax = new Tuple<string, int, string>("are", closingsCount, "s");
+            
+            string comparisionText = String.Format("Closings: There {0} currently {1} active closing{2} or delay{2}",
+                                            closingsSyntax.Item1, closingsSyntax.Item2, closingsSyntax.Item3);
+
+            string closingsText = String.Format("{0} {1}", closingsLabel, closingsHeadline);
+
+            Assert.AreEqual(comparisionText, closingsText, "There are active closings, but the closings text is not correct." + 
+                                                    "Page is displaying {0}.", closingsText);
+            /*
+            closings_label_el = self.find_el(self.Selectors.hp_alerts_closings_label, closings_alerts[0])
+        closings_label = self.get_el_attr(closings_label_el, "textContent")
+
+        closings_headline_el = self.find_el(self.Selectors.hp_alerts_closings_headline, closings_alerts[0])
+        closings_headline = self.get_el_attr(closings_headline_el, "textContent")
+
+        with self.subTest(name="Test Home Page alerts bar closings text"):
+            closings_text = closings_alerts[0].get_attribute("textContent").strip()
+
+            closings_alerts_template = "Closings: There %s currently %s active closing%s or delay%s"
+            interpolation_tuple = (
+                "is", 1, "", ""
+            ) if self.closings_count == 1 else (
+                "are", str(self.closings_count), "s", "s"
+            )
+            comparison_text = closings_alerts_template % interpolation_tuple
+
+            closings_text = "%s %s" % (closings_label, closings_headline)
+
+            assert_text = self.assert_text(self.Labels.active_closings, closings_text)
+
+            assert comparison_text == closings_text, assert_text
+             */
         }
     }
 }
