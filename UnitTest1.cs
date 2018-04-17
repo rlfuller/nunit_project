@@ -222,8 +222,10 @@ namespace Tests
 
             string closingsText = String.Format("{0} {1}", closingsLabel, closingsHeadline);
 
-            Assert.AreEqual(comparisionText, closingsText, "There are active closings, but the closings text is not correct." + 
-                                                    "Page is displaying {0}.", closingsText);
+            Assert.AreEqual(comparisionText, closingsText,
+                "There are active closings, but the closings text is not correct. Page is displaying {0}.",
+                closingsText
+            );
         }
 
         public void TestAlertBarClosingsNumber(IWebElement el)
@@ -244,8 +246,9 @@ namespace Tests
                     alertsBarClosings = int.Parse(value);
                 }
             }
-            Assert.AreEqual(alertsBarClosings, closingsCount, "Closings count is not correct. Api shows {0} and " + 
-                "alerts bar shows {1}.", closingsCount, alertsBarClosings
+            Assert.AreEqual(alertsBarClosings, closingsCount,
+                "Closings count is not correct. Api shows {0} and alerts bar shows {1}.",
+                closingsCount, alertsBarClosings
             );
         }
 
@@ -255,8 +258,9 @@ namespace Tests
             string href = el.GetAttribute("href");
             string comparison = String.Format("http://{0}/weather/closings", Configuration["host"]);
                 
-            Assert.AreEqual(href, comparison, "The closings href in the alerts bar is not correct. " +
-            "It links to {0}.", href);
+            Assert.AreEqual(href, comparison, 
+                "The closings href in the alerts bar is not correct. It links to {0}.", href
+            );
         }
     }
 }
